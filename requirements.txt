@@ -1,0 +1,9 @@
+flask
+pika
+redis
+requests
+numpy
+cupy-cuda12x
+xattr
+
+
