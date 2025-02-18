@@ -80,15 +80,18 @@ import socket
 try:
     import cupy as cp
     cuda_available = True
+    worker_type= "worker_gpu"
     print(" ----------- ")
     print(" GPU WORKER ")
     print(" ----------- ")
 except Exception as e:
     print(f"GPU no disponible: {e}")
     cuda_available = False
+    worker_type= "worker_cpu"
     print(" ----------- ")
     print(" CPU WORKER ")
     print(" ----------- ")
+
 
 # New hash function adapted for GPU/CPU
 def enhanced_hash_gpu_cpu(data):
@@ -96,6 +99,7 @@ def enhanced_hash_gpu_cpu(data):
         # Asegúrate de manejar correctamente los strings para la GPU
         data_bytes = cp.asarray(bytearray(data.encode('utf-8')), dtype=cp.uint8)
         hash_val = cp.zeros(1, dtype=cp.uint32)
+
     else:
         data_bytes = np.frombuffer(data.encode('utf-8'), dtype=np.uint8)
         hash_val = np.array([0], dtype=np.uint32)
@@ -153,7 +157,8 @@ def on_message_received(ch, method, properties, body):
                 "number": random_number,
                 "base_string_chain": data['base_string_chain'],
                 "blockchain_content": data['blockchain_content'],
-                "timestamp": processing_time
+                "timestamp": processing_time,
+                "worker_type": worker_type
             }
             
             # Enviar resultado a Coordinador
