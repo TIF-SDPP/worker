@@ -5,11 +5,20 @@ import random
 import requests
 import time
 import socket
+import numpy as np
 
-def calcular_sha256(texto):
-    hash_sha256 = hashlib.sha256()
-    hash_sha256.update(texto.encode('utf-8'))
-    return hash_sha256.hexdigest()
+def calcular_sha256(data):
+
+    data_bytes = np.frombuffer(data.encode('utf-8'), dtype=np.uint8)
+    hash_val = np.array([0], dtype=np.uint32)
+    
+    for byte in data_bytes:
+        hash_val = (hash_val * 31 + byte) & 0xFFFFFFFF
+        hash_val ^= (hash_val << 13) | (hash_val >> 19)
+        hash_val = (hash_val * 17) & 0xFFFFFFFF
+        hash_val = ((hash_val << 5) | (hash_val >> 27)) & 0xFFFFFFFF
+    
+    return format(int(hash_val), '08x')
 
 def post_result(data):
     url = "http://service-coordinador.default.svc.cluster.local:8080/solved_task"
@@ -42,7 +51,7 @@ def on_message_received(ch, method, properties, body):
     
     print("Starting mining process")
     while not encontrado:
-        numero_aleatorio = str(random.randint(0, data['random_num_max']))
+        numero_aleatorio =str(random.randint(data['random_start'], data['random_end']))
         hash_calculado = calcular_sha256(numero_aleatorio + data['base_string_chain'] + data['blockchain_content'])
         if hash_calculado.startswith(data['prefix']):
             encontrado = True
@@ -54,7 +63,8 @@ def on_message_received(ch, method, properties, body):
                 "number": numero_aleatorio,
                 "base_string_chain": data['base_string_chain'],
                 "blockchain_content": data['blockchain_content'],
-                "timestamp": processing_time
+                "timestamp": processing_time,
+                "worker_type": "worker_cpu"
             }
             
             # Enviar resultado a Coordinador
@@ -65,7 +75,7 @@ def on_message_received(ch, method, properties, body):
 
 def main():
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
+        pika.ConnectionParameters(host='rabbit1', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
     )
     channel = connection.channel()
     channel.queue_declare(queue='workers_queue', durable=True)
