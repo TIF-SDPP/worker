@@ -109,7 +109,7 @@ def enhanced_hash_gpu_cpu(data):
     return format(int(hash_val), '08x')
 
 def keep_alive():
-    url = "http://poolmanager:8080/keep_alive"
+    url = "http://service-poolmanager.default.svc.cluster.local:8080/keep_alive"
     worker_id = socket.gethostname()  # Usa el nombre del host como identificador único
 
     while True:  # Bucle infinito
@@ -123,7 +123,7 @@ def keep_alive():
         time.sleep(10)  # Espera 10 segundos antes de repetir
 
 def post_result(data):
-    url = "http://coordinador:8080/solved_task"
+    url = "http://service-coordinador.default.svc.cluster.local:8080/solved_task"
     try:
         response = requests.post(url, json=data)
         print("Post response:", response.text)
@@ -164,7 +164,7 @@ def on_message_received(ch, method, properties, body):
 
 def main():
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='rabbit1', port=5672, credentials=pika.PlainCredentials('rabbitmq', 'rabbitmq'))
+        pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
     )
     channel = connection.channel()
     channel.queue_declare(queue='workers_queue', durable=True)
