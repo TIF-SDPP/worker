@@ -64,7 +64,8 @@ def on_message_received(ch, method, properties, body):
                 "base_string_chain": data['base_string_chain'],
                 "blockchain_content": data['blockchain_content'],
                 "timestamp": processing_time,
-                "worker_type": "worker_cpu"
+                "worker_type": "worker_cpu",
+                "transactions": data['transactions']
             }
             
             # Enviar resultado a Coordinador
@@ -75,7 +76,7 @@ def on_message_received(ch, method, properties, body):
 
 def main():
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='rabbit1', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
+        pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
     )
     channel = connection.channel()
     channel.queue_declare(queue='workers_queue', durable=True)

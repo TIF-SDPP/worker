@@ -20,7 +20,8 @@ spec:
     spec:
       containers:
       - name: worker
-        image: leoduville5/worker_gpu_cpu:latest
+        image: leoduville5/worker_cpu:latest
+        imagePullPolicy: Always
         # resources:
         #   requests:
         #     memory: "100Mi"
