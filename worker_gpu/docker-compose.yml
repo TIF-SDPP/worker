@@ -1,0 +1,23 @@
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: worker_cpu_gpu:latest
+    ports:
+      - 8091:8080
+    networks:
+      - red_ej2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all"
+              capabilities: ["gpu"]
+    runtime: nvidia  # Agrega esta línea
+
+
+networks:
+  red_ej2:
+    external: true
