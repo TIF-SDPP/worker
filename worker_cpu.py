@@ -74,10 +74,19 @@ def on_message_received(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
     print(f"Result found and posted for block ID {data['id']} in {processing_time:.2f} seconds")
 
+def connect_rabbitmq():
+    while True:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest')))
+            return connection
+        except pika.exceptions.AMQPConnectionError:
+            print("Fallo en la conexión, reintentando en 5 segundos...")
+            time.sleep(5)
+
+
+
 def main():
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
-    )
+    connection = connect_rabbitmq()
     channel = connection.channel()
     channel.queue_declare(queue='workers_queue', durable=True)
     # Enlazar la cola al exchange con un binding key (ejemplo: "challenge.#")
