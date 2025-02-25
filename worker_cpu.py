@@ -34,7 +34,8 @@ def keep_alive():
 
     while True:  # Bucle infinito
         try:
-            data = {"worker_id": worker_id}  # Enviar el worker_id en el body
+            data = {"worker_id": worker_id,
+                    "worker_user": "false"}  # Enviar el worker_id en el body
             response = requests.post(url, json=data)  # Enviar el JSON en el POST
             print("Post response:", response.text)
         except requests.exceptions.RequestException as e:
