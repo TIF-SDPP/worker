@@ -31,17 +31,17 @@ def post_result(data):
 def keep_alive():
     url = "http://service-poolmanager.default.svc.cluster.local:8080/keep_alive"
     worker_id = socket.gethostname()  # Usa el nombre del host como identificador único
+    is_in_cloud = True  # Cambia a True si este worker está local
 
-    while True:  # Bucle infinito
+    while True:  
         try:
-            data = {"worker_id": worker_id,
-                    "worker_user": "false"}  # Enviar el worker_id en el body
-            response = requests.post(url, json=data)  # Enviar el JSON en el POST
+            data = {"worker_id": worker_id, "worker_user": str(is_in_cloud).lower()}  
+            response = requests.post(url, json=data)  
             print("Post response:", response.text)
         except requests.exceptions.RequestException as e:
             print("Failed to send POST request:", e)
         
-        time.sleep(10)  # Espera 10 segundos antes de repetir
+        time.sleep(10)  # Enviar cada 10 segundos
 
 def on_message_received(ch, method, properties, body):
     data = json.loads(body)
