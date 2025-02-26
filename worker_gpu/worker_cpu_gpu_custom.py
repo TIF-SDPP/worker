@@ -113,12 +113,13 @@ def enhanced_hash_gpu_cpu(data):
     return format(int(hash_val), '08x')
 
 def keep_alive():
-    url = "http://35.237.155.131:8080/keep_alive"
+    url = "http://34.148.250.135:8080/keep_alive"
     worker_id = socket.gethostname()  # Usa el nombre del host como identificador único
+    is_user = True  # Cambia a True si este worker está local
 
     while True:  # Bucle infinito
         try:
-            data = {"worker_id": worker_id}  # Enviar el worker_id en el body
+            data = {"worker_id": worker_id, "worker_user": str(is_user).lower(),"worker_type": "worker_gpu"}  
             response = requests.post(url, json=data)  # Enviar el JSON en el POST
             print("Post response:", response.text)
         except requests.exceptions.RequestException as e:
@@ -169,7 +170,7 @@ def on_message_received(ch, method, properties, body):
 
 def main():
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='35.237.50.194', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
+        pika.ConnectionParameters(host='34.75.223.28', port=5672, credentials=pika.PlainCredentials('guest', 'guest'))
     )
     channel = connection.channel()
     channel.queue_declare(queue='workers_queue', durable=True)
