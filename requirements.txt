@@ -1,5 +1,4 @@
 pika
 requests
 numpy
-
-
+python-dotenv

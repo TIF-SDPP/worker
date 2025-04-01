@@ -6,6 +6,13 @@ import requests
 import time
 import socket
 import numpy as np
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+POOL_MANAGER_HOST = os.getenv("POOL_MANAGER_HOST")
+COORDINADOR_HOST = os.getenv("COORDINADOR_HOST")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
 
 def calcular_sha256(data):
 
@@ -21,7 +28,7 @@ def calcular_sha256(data):
     return format(int(hash_val), '08x')
 
 def post_result(data):
-    url = "http://service-coordinador.default.svc.cluster.local:8080/solved_task"
+    url = f"{COORDINADOR_HOST}/solved_task"
     try:
         response = requests.post(url, json=data)
         print("Post response:", response.text)
@@ -29,13 +36,15 @@ def post_result(data):
         print("Failed to send POST request:", e)
 
 def keep_alive():
-    url = "http://service-poolmanager.default.svc.cluster.local:8080/keep_alive"
+    url = f"{POOL_MANAGER_HOST}/keep_alive"
+    print(url)
     worker_id = socket.gethostname()  # Usa el nombre del host como identificador único
     is_user = False  # Cambia a True si este worker está local
 
     while True:  
         try:
             data = {"worker_id": worker_id, "worker_user": str(is_user).lower(),"worker_type": "worker_cpu"}  
+            print(data)
             response = requests.post(url, json=data)  
             print("Post response:", response.text)
         except requests.exceptions.RequestException as e:
@@ -68,6 +77,8 @@ def on_message_received(ch, method, properties, body):
                 "worker_type": "worker_cpu",
                 "transactions": data['transactions']
             }
+
+            print(result_data)
             
             # Enviar resultado a Coordinador
             post_result(result_data)
@@ -78,7 +89,7 @@ def on_message_received(ch, method, properties, body):
 def connect_rabbitmq():
     while True:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='service-rabbitmq.default.svc.cluster.local', port=5672, credentials=pika.PlainCredentials('guest', 'guest')))
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials('guest', 'guest')))
             return connection
         except pika.exceptions.AMQPConnectionError:
             print("Fallo en la conexión, reintentando en 5 segundos...")
