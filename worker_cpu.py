@@ -73,7 +73,7 @@ def on_message_received(ch, method, properties, body):
                 "number": numero_aleatorio,
                 "base_string_chain": data['base_string_chain'],
                 "blockchain_content": data['blockchain_content'],
-                "timestamp": processing_time,
+                "processing_time": processing_time,
                 "worker_type": "worker_cpu",
                 "transactions": data['transactions']
             }
