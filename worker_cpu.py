@@ -58,14 +58,22 @@ def on_message_received(ch, method, properties, body):
    
     encontrado = False
     start_time = time.time()
-    
+    timeout_seconds = 20 * 60  # 20 minutos
+
     print("Starting mining process")
     while not encontrado:
-        numero_aleatorio =str(random.randint(data['random_start'], data['random_end']))
-        hash_calculado = calcular_sha256(numero_aleatorio + data['base_string_chain'] + data['blockchain_content'])
+        if time.time() - start_time > timeout_seconds:
+            print(f"Timeout de 20 minutos alcanzado para el bloque {data['id']}. Minado cancelado.")
+            break
+
+        numero_aleatorio = str(random.randint(data['random_start'], data['random_end']))
+        hash_calculado = calcular_sha256(
+            numero_aleatorio + data['base_string_chain'] + data['blockchain_content']
+        )
+
         if hash_calculado.startswith(data['prefix']):
             encontrado = True
-            processing_time=time.time() - start_time
+            processing_time = time.time() - start_time
             
             result_data = {
                 "id": data["id"],
@@ -79,12 +87,11 @@ def on_message_received(ch, method, properties, body):
             }
 
             print(result_data)
-            
-            # Enviar resultado a Coordinador
             post_result(result_data)
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(f"Result found and posted for block ID {data['id']} in {processing_time:.2f} seconds")
+    print(f"Finalizado procesamiento para el bloque ID {data['id']}")
+
 
 def connect_rabbitmq():
     while True:
