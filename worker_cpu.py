@@ -59,11 +59,17 @@ def on_message_received(ch, method, properties, body):
     encontrado = False
     start_time = time.time()
     timeout_seconds = 20 * 60  # 20 minutos
-
+    timeout = False
     print("Starting mining process")
     while not encontrado:
         if time.time() - start_time > timeout_seconds:
             print(f"Timeout de 20 minutos alcanzado para el bloque {data['id']}. Minado cancelado.")
+            timeout = True
+            result_data = {
+                "id": data["id"],
+                "timeout": timeout
+            }
+            post_result(result_data)
             break
 
         numero_aleatorio = str(random.randint(data['random_start'], data['random_end']))
@@ -77,6 +83,7 @@ def on_message_received(ch, method, properties, body):
             
             result_data = {
                 "id": data["id"],
+                "timeout": timeout,
                 "hash": hash_calculado,
                 "number": numero_aleatorio,
                 "base_string_chain": data['base_string_chain'],
