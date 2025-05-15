@@ -114,8 +114,8 @@ def connect_rabbitmq():
 def main():
     connection = connect_rabbitmq()
     channel = connection.channel()
+    channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
     channel.queue_declare(queue='workers_queue', durable=True)
-    # Enlazar la cola al exchange con un binding key (ejemplo: "challenge.#")
     channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
     channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
     print('Waiting for messages. To exit press CTRL+C')
