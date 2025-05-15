@@ -42,7 +42,7 @@ jobs:
           project_id: ${{secrets.YOUR_PROJECT_ID}}
       - name: Create Kubernetes Secret for worker_cpu
         run: |
-          kubectl create secret generic worker_cpu-secrets \
+          kubectl create secret generic workercpu-secrets \
             --from-literal=REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
             --from-literal=RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }} \
             --dry-run=client -o yaml | kubectl apply -f -

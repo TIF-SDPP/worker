@@ -35,12 +35,12 @@ spec:
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: worker_cpu-secrets
+              name: workercpu-secrets
               key: REDIS_PASSWORD
         - name: RABBITMQ_PASS
           valueFrom:
             secretKeyRef:
-              name: worker_cpu-secrets
+              name: workercpu-secrets
               key: RABBITMQ_PASS
 
       #   volumeMounts:
