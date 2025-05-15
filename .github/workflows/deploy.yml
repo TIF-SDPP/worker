@@ -49,5 +49,5 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f k8s/deploy-coordinador.yaml
-          kubectl apply -f k8s/headless-coordinador.yaml
+          kubectl apply -f k8s/deploy-worker.yaml
+          kubectl apply -f k8s/service-worker.yaml
