@@ -13,6 +13,8 @@ load_dotenv()
 POOL_MANAGER_HOST = os.getenv("POOL_MANAGER_HOST")
 COORDINADOR_HOST = os.getenv("COORDINADOR_HOST")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS")
 
 def calcular_sha256(data):
 
@@ -108,7 +110,7 @@ def on_message_received(ch, method, properties, body):
 def connect_rabbitmq():
     while True:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials('guest', 'guest')))
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)))
             return connection
         except pika.exceptions.AMQPConnectionError:
             print("Fallo en la conexión, reintentando en 5 segundos...")
