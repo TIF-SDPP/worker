@@ -5,7 +5,7 @@ metadata:
   namespace: default
 
 spec:
-  replicas: 1
+  replicas: 0
 
   selector:
     matchLabels:
@@ -20,15 +20,15 @@ spec:
     spec:
       containers:
       - name: worker
-        image: leoduville5/worker_cpu:v9
+        image: leoduville5/worker_cpu:v13
         imagePullPolicy: Always
-        # resources:
-        #   requests:
-        #     memory: "100Mi"
-        #     cpu: "250m"
-        #   limits:
-        #     memory: "2048Mi"
-        #     cpu: "1000m"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
         env:
         - name: "PORT"
           value: "8080"
@@ -52,13 +52,13 @@ spec:
         value: spot
         effect: NoSchedule
 
-      affinity:
-        # El siguiente código permite que el pod sea desplegado en un nodo matcheado por 'matchExpressions'.
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: team
-                operator: In
-                values:
-                - devops
+      # affinity:
+      #   # El siguiente código permite que el pod sea desplegado en un nodo matcheado por 'matchExpressions'.
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: team
+      #           operator: In
+      #           values:
+      #           - devops
