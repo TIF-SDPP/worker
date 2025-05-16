@@ -30,7 +30,7 @@ def calcular_sha256(data):
 def post_result(data):
     url = f"{COORDINADOR_HOST}/solved_task"
     try:
-        response = requests.post(url, json=data)
+        response = requests.post(url, json=data, timeout=5)
         print("Post response:", response.text)
     except requests.exceptions.RequestException as e:
         print("Failed to send POST request:", e)
@@ -53,52 +53,57 @@ def keep_alive():
         time.sleep(10)  # Enviar cada 10 segundos
 
 def on_message_received(ch, method, properties, body):
-    data = json.loads(body)
-    print(f"Message {data} received")
-   
-    encontrado = False
-    start_time = time.time()
-    timeout_seconds = 20 * 60  # 20 minutos
-    timeout = False
-    print("Starting mining process")
-    while not encontrado:
-        if time.time() - start_time > timeout_seconds:
-            print(f"Timeout de 20 minutos alcanzado para el bloque {data['id']}. Minado cancelado.")
-            timeout = True
-            result_data = {
-                "id": data["id"],
-                "timeout": timeout
-            }
-            post_result(result_data)
-            break
+    try:
+        data = json.loads(body)
+        print(f"Message {data} received")
 
-        numero_aleatorio = str(random.randint(data['random_start'], data['random_end']))
-        hash_calculado = calcular_sha256(
-            numero_aleatorio + data['base_string_chain'] + data['blockchain_content']
-        )
+        encontrado = False
+        start_time = time.time()
+        timeout_seconds = 20 * 60
+        timeout = False
+        print("Starting mining process")
 
-        if hash_calculado.startswith(data['prefix']):
-            encontrado = True
-            processing_time = time.time() - start_time
-            
-            result_data = {
-                "id": data["id"],
-                "timeout": timeout,
-                "hash": hash_calculado,
-                "number": numero_aleatorio,
-                "base_string_chain": data['base_string_chain'],
-                "blockchain_content": data['blockchain_content'],
-                "processing_time": processing_time,
-                "worker_type": "worker_cpu",
-                "transactions": data['transactions']
-            }
+        while not encontrado:
+            if time.time() - start_time > timeout_seconds:
+                print(f"Timeout alcanzado para bloque {data['id']}")
+                timeout = True
+                result_data = {
+                    "id": data["id"],
+                    "timeout": timeout
+                }
+                post_result(result_data)
+                break
 
-            print(result_data)
-            post_result(result_data)
+            numero_aleatorio = str(random.randint(data['random_start'], data['random_end']))
+            hash_calculado = calcular_sha256(
+                numero_aleatorio + data['base_string_chain'] + data['blockchain_content']
+            )
 
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(f"Finalizado procesamiento para el bloque ID {data['id']}")
+            if hash_calculado.startswith(data['prefix']):
+                encontrado = True
+                processing_time = time.time() - start_time
 
+                result_data = {
+                    "id": data["id"],
+                    "timeout": timeout,
+                    "hash": hash_calculado,
+                    "number": numero_aleatorio,
+                    "base_string_chain": data['base_string_chain'],
+                    "blockchain_content": data['blockchain_content'],
+                    "processing_time": processing_time,
+                    "worker_type": "worker_cpu",
+                    "transactions": data['transactions'],
+                    "prefix": data['prefix']
+                }
+
+                print(result_data)
+                post_result(result_data)
+
+    except Exception as e:
+        print(f"Error procesando mensaje: {e}")
+    finally:
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        print(f"Finalizado procesamiento para el bloque ID {data.get('id', 'desconocido')}")
 
 def connect_rabbitmq():
     while True:
@@ -111,25 +116,54 @@ def connect_rabbitmq():
 
 
 
-def main():
-    connection = connect_rabbitmq()
-    channel = connection.channel()
-    channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
-    channel.queue_declare(queue='workers_queue', durable=True)
-    channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
-    channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
-    print('Waiting for messages. To exit press CTRL+C')
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        print("Consumption stopped by user.")
-        connection.close()
-        print("Connection closed.")
+# def main():
+#     connection = connect_rabbitmq()
+#     channel = connection.channel()
+#     channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
+#     channel.queue_declare(queue='workers_queue', durable=True)
+#     channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
+#     channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
+#     print('Waiting for messages. To exit press CTRL+C')
+#     try:
+#         channel.start_consuming()
+#     except KeyboardInterrupt:
+#         print("Consumption stopped by user.")
+#         connection.close()
+#         print("Connection closed.")
+
+def consume():
+    while True:
+        try:
+            print("Intentando conectar a RabbitMQ...")
+            connection = connect_rabbitmq()
+            channel = connection.channel()
+            channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
+            channel.queue_declare(queue='workers_queue', durable=True)
+            channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
+            channel.basic_qos(prefetch_count=1)
+            channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
+            print('✅ Conectado. Esperando mensajes...')
+
+            channel.start_consuming()
+
+        except (pika.exceptions.AMQPConnectionError, pika.exceptions.StreamLostError, ConnectionResetError) as e:
+            print(f"❌ Conexión perdida: {e}")
+            print("Reintentando conexión en 5 segundos...")
+            time.sleep(5)
+        except KeyboardInterrupt:
+            print("⛔ Terminando por usuario.")
+            break
+        except Exception as e:
+            print(f"🔴 Error inesperado: {e}")
+            print("Reintentando en 5 segundos...")
+            time.sleep(5)
 
 # Run the process_packages method in a separate thread
 import threading
-process_packages_thread = threading.Thread(target=keep_alive, daemon=True)
-process_packages_thread.start()
-
 if __name__ == '__main__':
-    main()
+    # Lanzar keep_alive en hilo separado
+    process_packages_thread = threading.Thread(target=keep_alive, daemon=True)
+    process_packages_thread.start()
+
+    # Iniciar consumo con reconexión automática
+    consume()
