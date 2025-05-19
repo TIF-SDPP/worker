@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: leoduville5/worker_cpu:v16
+        image: leoduville5/worker_cpu:v17
         imagePullPolicy: Always
         resources:
           requests:

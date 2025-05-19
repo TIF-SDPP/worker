@@ -8,11 +8,14 @@ import socket
 import numpy as np
 from dotenv import load_dotenv
 import os
+import threading
 
 load_dotenv()
 POOL_MANAGER_HOST = os.getenv("POOL_MANAGER_HOST")
 COORDINADOR_HOST = os.getenv("COORDINADOR_HOST")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
+RABBITMQ_USER = os.getenv("RABBITMQ_USER")
+RABBITMQ_PASS = os.getenv("RABBITMQ_PASS")
 
 def calcular_sha256(data):
 
@@ -108,25 +111,44 @@ def on_message_received(ch, method, properties, body):
 def connect_rabbitmq():
     while True:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS), heartbeat=30))
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS), heartbeat=20))
             return connection
         except pika.exceptions.AMQPConnectionError:
             print("Fallo en la conexión, reintentando en 5 segundos...")
             time.sleep(5)
 
+def consume():
+    while True:
+        try:
+            print("Intentando conectar a RabbitMQ...")
+            connection = connect_rabbitmq()
+            channel = connection.channel()
+            channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
+            channel.queue_declare(queue='workers_queue', durable=True)
+            channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
+            channel.basic_qos(prefetch_count=1)
+            channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
+            print('✅ Conectado. Esperando mensajes...')
 
+            channel.start_consuming()
 
-def main():
-    connection = connect_rabbitmq()
-    channel = connection.channel()
-    channel.exchange_declare(exchange='workers_queue', exchange_type='topic', durable=True)
-    channel.queue_declare(queue='workers_queue', durable=True)
-    channel.queue_bind(exchange='workers_queue', queue='workers_queue', routing_key='hash_task')
-    channel.basic_consume(queue='workers_queue', on_message_callback=on_message_received, auto_ack=False)
-    print('Waiting for messages. To exit press CTRL+C')
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        print("Consumption stopped by user.")
-        connection.close()
-        print("Connection closed.")
+        except (pika.exceptions.AMQPConnectionError, pika.exceptions.StreamLostError, ConnectionResetError) as e:
+            print(f"❌ Conexión perdida: {e}")
+            print("Reintentando conexión en 5 segundos...")
+            time.sleep(5)
+        except KeyboardInterrupt:
+            print("⛔ Terminando por usuario.")
+            break
+        except Exception as e:
+            print(f"🔴 Error inesperado: {e}")
+            print("Reintentando en 5 segundos...")
+            time.sleep(5)
+
+# Run the process_packages method in a separate thread
+if __name__ == '__main__':
+    # Lanzar keep_alive en hilo separado
+    process_packages_thread = threading.Thread(target=keep_alive, daemon=True)
+    process_packages_thread.start()
+
+    # Iniciar consumo con reconexión automática
+    consume()
