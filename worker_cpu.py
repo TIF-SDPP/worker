@@ -111,7 +111,7 @@ def on_message_received(ch, method, properties, body):
 def connect_rabbitmq():
     while True:
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS), heartbeat=20))
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=5672, credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS), heartbeat=1200))
             return connection
         except pika.exceptions.AMQPConnectionError:
             print("Fallo en la conexión, reintentando en 5 segundos...")
