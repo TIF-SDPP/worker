@@ -93,7 +93,8 @@ def on_message_received(ch, method, properties, body):
                 "blockchain_content": data['blockchain_content'],
                 "processing_time": processing_time,
                 "worker_type": "worker_cpu",
-                "transactions": data['transactions']
+                "transactions": data['transactions'],
+                "prefix": data['prefix']
             }
 
             print(result_data)

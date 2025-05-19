@@ -20,15 +20,15 @@ spec:
     spec:
       containers:
       - name: worker
-        image: leoduville5/worker_cpu:v18
+        image: leoduville5/worker_cpu:v20
         imagePullPolicy: Always
         resources:
           requests:
-            memory: "100Mi"
-            cpu: "150m"
+            memory: "3096Mi"
+            cpu: "750m"
           limits:
-            memory: "2048Mi"
-            cpu: "500m"
+            memory: "4096Mi"
+            cpu: "1000m"
         env:
         - name: "PORT"
           value: "8080"
